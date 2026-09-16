@@ -255,6 +255,26 @@ export default function App() {
     }, 5000);
   };
 
+  const handleDocumentsBatchCreated = (newDocs: DocumentItem[]) => {
+    setDocuments((prev) => [...newDocs, ...prev]);
+
+    if (newDocs.length > 0) {
+      if (newDocs[0].category === 'tai-lieu') {
+        setActiveNavTab('tai-lieu');
+      } else {
+        setActiveNavTab('de-thi');
+        setExamSubTag(newDocs[0].category as any);
+      }
+    }
+
+    setDownloadNotification(
+      `AI Gemini 2.5 đã tự động quét & nạp ${newDocs.length} tài liệu/đề thi vào thư viện thành công!`
+    );
+    setTimeout(() => {
+      setDownloadNotification(null);
+    }, 6000);
+  };
+
   const handleDeleteDocument = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setDocuments((prev) => {

@@ -46,54 +46,61 @@ async function startServer() {
         },
       });
 
-      const systemPrompt = `Bạn là một chuyên gia khảo thí và biên tập đề thi / tài liệu Toán học THPT tại Việt Nam (Math Exam Specialist & AI Document Analyst).
-Nhiệm vụ tối quan trọng của bạn là ĐỌC TRỰC TIẾP TOÀN BỘ NỘI DUNG TỆP PDF / TÀI LIỆU được gửi lên, phân tích sâu sắc các trang của văn bản để trích xuất CHÍNH XÁC thông tin thực tế.
+      const systemPrompt = `Bạn là chuyên gia khảo thí và giám khảo biên tập đề thi / tài liệu môn Toán THPT tại Việt Nam (Lê Ngọc Long Math Portal - Senior Math Examiner & AI Document Specialist).
+Nhiệm vụ của bạn là ĐỌC TRỰC TIẾP TẬP TIN PDF / VĂN BẢN ĐỀ THI ĐƯỢC GỬI LÊN, phân tích sâu từng trang văn bản và các công thức toán học để trích xuất CHÍNH XÁC thông tin thực tế.
 
-CÁC YÊU CẦU BẮT BUỘC ĐỂ TRÁNH RẬP KHUÔN VÀ SAI PHÂN LOẠI:
-1. ĐƠN VỊ RA ĐỀ (institution): Tìm và đọc kỹ phần đầu (header) của đề thi hoặc các trang văn bản để xác định xem đề là của SỞ NÀO (VD: "Sở GD&ĐT Hà Nội", "Sở GD&ĐT Nam Định", "Sở GD&ĐT Nghệ An", "Sở GD&ĐT Vĩnh Phúc"...) hoặc TRƯỜNG NÀO (VD: "THPT Chuyên Lam Sơn", "THPT Chuyên Khoa Học Tự Nhiên", "THPT Chu Văn An"...) hay Cụm trường nào. Nếu là tài liệu do thầy cô biên soạn thì ghi rõ tác giả/ban biên soạn.
-2. TÊN KỲ THI (examName): Đọc tên kỳ thi in trên đề (VD: "Kỳ thi Khảo sát chất lượng kết hợp", "Thi thử Tốt nghiệp THPT Lần 1/2/3", "Kỳ thi Chọn học sinh giỏi cấp tỉnh môn Toán", "Kiểm tra định kỳ học kỳ 2"...).
-3. NĂM HỌC (year): Trích xuất năm học ghi trên đề (VD: 2024 - 2025, 2025).
-4. SỐ LƯỢNG CÂU TRONG ĐỀ (questionCount): Đếm và ghi rõ cấu trúc số câu thực tế (VD: "50 câu trắc nghiệm (Thời gian 90 phút)", hoặc "22 câu (Gồm 12 câu TN 4 lựa chọn, 4 câu Đúng/Sai, 6 câu trả lời ngắn format GDPT 2018)", hoặc "5 bài tự luận (Thời gian 150 phút)").
-5. PHÂN LOẠI CHUẨN XÁC (category):
-   - "de-thi-hsg": CHỈ KHI đề bài là Đề thi Học sinh giỏi (HSG) cấp trường/cụm/tỉnh/thành phố/quốc gia hoặc chọn đội tuyển.
-   - "de-thi-tn-thpt": KHI là Đề thi thử Tốt nghiệp THPT, Đề khảo sát chất lượng THPT Quốc gia, Đề thi thử Đại học bám sát kỳ thi tốt nghiệp.
-   - "tai-lieu": KHI là Tài liệu chuyên đề, Lý thuyết trọng tâm, Tuyển tập bài tập theo dạng, Sổ tay công thức, Phương pháp giải Toán.
-6. TÓM TẮT NỘI DUNG CHÍNH (summary - từ 2 đến 4 câu):
-   TUYỆT ĐỐI KHÔNG DÙNG VĂN MẪU RẬP KHUÔN! Phải phản ánh đúng nội dung thực tế của đề/tài liệu này:
-   - Câu 1: Giới thiệu chính xác xuất xứ: Đề thi/Tài liệu của Sở/Trường nào, kỳ thi nào, số câu và thời lượng.
-   - Câu 2: Nêu cụ thể 2-3 dạng toán hoặc câu hỏi tiêu biểu có trong file (VD: Nêu rõ câu đồ thị hàm phân thức, câu tích phân từng phần, câu hình Oxyz mặt cầu tiếp xúc, hay bài toán xác suất thực tế ghép nhóm).
-   - Câu 3: Đánh giá mức độ phân hóa câu hỏi và đối tượng học sinh (mục tiêu điểm 7+, 8+, 9+ hoặc HSG).
-7. MỤC LỤC & CÂU HỎI TIÊU BIỂU: Trích xuất trực tiếp các câu hỏi thực tế có trong tài liệu/đề thi kèm công thức toán cụ thể.`;
+CÁC NGUYÊN TẮC BẮT BUỘC ĐỂ TRÁNH RẬP KHUÔN VÀ SAI SÓT:
+1. ĐƠN VỊ RA ĐỀ (institution):
+   - Đọc kỹ phần tiêu đề góc trên bên trái ở Trang 1 của đề thi hoặc tài liệu.
+   - Nhận diện chính xác tên SỞ GD&ĐT (ví dụ: "Sở GD&ĐT Nam Định", "Sở GD&ĐT Hà Nội", "Sở GD&ĐT Nghệ An", "Sở GD&ĐT Vĩnh Phúc", "Sở GD&ĐT Hải Phòng", "Sở GD&ĐT TP.HCM"...) hoặc TRƯỜNG THPT CHUYÊN (ví dụ: "THPT Chuyên Lam Sơn", "THPT Chuyên Hà Nội - Amsterdam", "THPT Chuyên Khoa Học Tự Nhiên", "THPT Chu Văn An"...). Nếu là tài liệu chuyên đề của tác giả thì ghi rõ tên giáo viên / ban biên soạn.
+2. TÊN KỲ THI (examName):
+   - Đọc chính xác tên kỳ thi in trên đầu đề thi: "Kỳ thi Khảo sát chất lượng kết hợp", "Thi thử Tốt nghiệp THPT 2025 Lần 1", "Kỳ thi Chọn học sinh giỏi cấp tỉnh môn Toán", "Kiểm tra học kỳ 2 môn Toán"...
+3. SỐ LƯỢNG CÂU & CẤU TRÚC ĐỀ (questionCount):
+   - Đếm và phân loại chính xác cấu trúc đề thi:
+     * Format mới 2025: "22 câu (Phần I: 12 câu TN 4 lựa chọn, Phần II: 4 câu Đúng/Sai, Phần III: 6 câu trả lời ngắn) - 90 phút"
+     * Format cũ: "50 câu trắc nghiệm 4 lựa chọn (90 phút)"
+     * Format HSG: "5 bài toán tự luận chuyên sâu (150 hoặc 180 phút)"
+4. PHÂN LOẠI (category):
+   - "de-thi-hsg": Khi là đề thi Học sinh giỏi, đề chọn đội tuyển, đề Olympic Toán.
+   - "de-thi-tn-thpt": Khi là đề thi thử Tốt nghiệp THPT, đề khảo sát chất lượng THPT Quốc gia.
+   - "tai-lieu": Khi là tài liệu chuyên đề lý thuyết, tổng hợp phương pháp giải, sổ tay công thức.
+5. TÓM TẮT CHUYÊN MÔN HỌC THUẬT (summary):
+   - TUYỆT ĐỐI KHÔNG DÙNG VĂN MẪU RẬP KHUÔN LẶP LẠI! Phải viết từ 2 đến 4 câu chứa các chi tiết thực tế của chính đề thi này:
+     * Nêu rõ xuất xứ: Sở/Trường nào, kỳ thi nào, số câu và thời gian làm bài.
+     * Nêu cụ thể 2 - 3 bài toán hoặc dạng toán thực tế xuất hiện trong đề (ví dụ: bài toán cực trị hàm hợp $g(x)=f(x^2-2x)$, bài toán tối ưu hóa chi phí sản xuất, bài toán xác suất có điều kiện, câu hình không gian Oxyz mặt cầu tiếp xúc, hay bất đẳng thức 3 biến).
+     * Đánh giá độ phân hóa và đối tượng học sinh hướng tới (mục tiêu 7+, 8+, 9+ hoặc ôn thi HSG).
+6. TRÍCH XUẤT CÂU HỎI TIÊU BIỂU (sampleQuestions):
+   - Trích xuất trực tiếp 2 đến 3 câu hỏi thực tế có trong tài liệu, giữ nguyên công thức toán.`;
 
-      let contentsPayload: any;
+      const contentsPayload: any[] = [];
 
       if (fileBase64) {
-        contentsPayload = {
-          parts: [
-            {
-              inlineData: {
-                data: fileBase64,
-                mimeType: mimeType,
-              },
-            },
-            {
-              text: `Tên tệp: "${fileName || "TaiLieuToan.pdf"}".
-HÃY ĐỌC TOÀN BỘ CÁC TRANG CỦA TẬP TIN PDF NÀY ĐỂ TRÍCH XUẤT CHÍNH XÁC:
-- Đơn vị ra đề (Sở GD&ĐT nào? Trường nào? Cụm nào?).
-- Tên kỳ thi cụ thể và năm học.
-- Đếm chính xác số lượng câu hỏi trong đề.
-- Phân loại chính xác: "de-thi-hsg" hay "de-thi-tn-thpt" hay "tai-lieu".
-- Tóm tắt 2-4 câu sát thực tế đề bài, không dùng văn mẫu chung chung.
-Sinh đúng theo định dạng JSON schema yêu cầu.`,
-            },
-          ],
-        };
+        contentsPayload.push({
+          inlineData: {
+            data: fileBase64,
+            mimeType: mimeType || "application/pdf",
+          },
+        });
+        contentsPayload.push(
+          `Tên tệp: "${fileName || "TaiLieuToan.pdf"}".\n` +
+          `HÃY ĐỌC TRỰC TIẾP NỘI DUNG TẬP TIN NÀY VÀ TRÍCH XUẤT CHÍNH XÁC:\n` +
+          `- Đơn vị ra đề (Sở GD&ĐT nào? Trường THPT nào? Cụm nào?).\n` +
+          `- Tên kỳ thi cụ thể ghi trong đề.\n` +
+          `- Đếm chính xác số lượng câu hỏi và cấu trúc (ví dụ: Format mới 2025 gồm 22 câu hay Format 50 câu hay Tự luận 5 bài).\n` +
+          `- Xác định chính xác số trang thực tế của đề thi/tài liệu (trang cuối cùng hoặc tổng số trang thực tế, không mặc định 16 trang).\n` +
+          `- Phân loại chính xác: "de-thi-hsg", "de-thi-tn-thpt", hoặc "tai-lieu".\n` +
+          `- Tóm tắt chuyên môn 2-4 câu nêu rõ các dạng toán thực tế trong đề, không dùng văn mẫu chung chung.\n` +
+          `Xuất ra định dạng JSON đúng Schema.`
+        );
       } else {
-        contentsPayload = `Tên tệp: "${fileName}".\nNội dung văn bản: "${textContent?.slice(0, 15000) || "Tài liệu Toán học THPT"}".\nHãy đọc kỹ toàn bộ nội dung văn bản này để xác định đơn vị ra đề (Sở/Trường), tên kỳ thi, số lượng câu trong đề, phân loại chính xác và tóm tắt 2-4 câu chi tiết không rập khuôn theo đúng JSON schema.`;
+        contentsPayload.push(
+          `Tên tệp: "${fileName}".\nNội dung văn bản: "${textContent?.slice(0, 15000) || "Tài liệu Toán học THPT"}".\n` +
+          `Hãy phân tích chi tiết văn bản này để xác định đơn vị ra đề (Sở/Trường), kỳ thi, số lượng câu, số trang thực tế, phân loại và tóm tắt thực tế không rập khuôn theo JSON Schema.`
+        );
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-2.5-flash",
         contents: contentsPayload,
         config: {
           systemInstruction: systemPrompt,
@@ -123,7 +130,7 @@ Sinh đúng theo định dạng JSON schema yêu cầu.`,
               },
               questionCount: {
                 type: Type.STRING,
-                description: "Số lượng câu hỏi trong đề (VD: '50 câu trắc nghiệm', '22 câu (Format mới 2025)', '5 bài tự luận')",
+                description: "Số lượng câu hỏi trong đề (VD: '22 câu (Format mới 2025)', '50 câu trắc nghiệm', '5 bài tự luận')",
               },
               grade: {
                 type: Type.STRING,
@@ -139,7 +146,7 @@ Sinh đúng theo định dạng JSON schema yêu cầu.`,
               },
               estimatedPages: {
                 type: Type.INTEGER,
-                description: "Ước lượng số trang tài liệu",
+                description: "Số trang thực tế của đề thi/tài liệu (đo chính xác, không tự ý gán 16 trang)",
               },
               tags: {
                 type: Type.ARRAY,
@@ -187,7 +194,30 @@ Sinh đúng theo định dạng JSON schema yêu cầu.`,
         },
       });
 
+      let detectedPageCount: number | null = null;
+      if (fileBase64) {
+        try {
+          const buffer = Buffer.from(fileBase64, "base64");
+          const rawString = buffer.toString("binary");
+          const countMatch = rawString.match(/\/Type\s*\/Pages[^>]*\/Count\s+(\d+)/);
+          if (countMatch && parseInt(countMatch[1], 10) > 0) {
+            detectedPageCount = parseInt(countMatch[1], 10);
+          } else {
+            const pageMatches = rawString.match(/\/Type\s*\/Page\b/g);
+            if (pageMatches && pageMatches.length > 0) {
+              detectedPageCount = pageMatches.length;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not parse PDF page count from buffer:", e);
+        }
+      }
+
       const parsed = JSON.parse(response.text?.trim() || "{}");
+      if (detectedPageCount && detectedPageCount > 0) {
+        parsed.estimatedPages = detectedPageCount;
+        parsed.actualPages = detectedPageCount;
+      }
       return res.json(parsed);
     } catch (err: any) {
       console.error("Gemini analysis error:", err);
