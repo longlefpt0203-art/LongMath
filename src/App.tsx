@@ -446,7 +446,7 @@ export default function App() {
                 Cần File Nguồn LaTeX (.tex) Để Soạn Đề Hoặc Giảng Dạy?
               </h3>
               <p className="text-xs md:text-sm text-blue-200 leading-relaxed">
-                Mỗi tài liệu trên website đều được gắn sẵn <strong>Mã QR kết nối trực tiếp</strong>. Thầy/Cô chỉ cần quét mã QR bằng Zalo để nhận file nguồn LaTeX (.tex) kèm hình vẽ chuẩn PGF/TikZ hoàn toàn miễn phí từ tác giả.
+                Mỗi tài liệu trên website đều được gắn sẵn <strong>Mã QR kết nối trực tiếp</strong>. Thầy/Cô chỉ cần quét mã QR bằng Zalo để nhận file nguồn LaTeX (.tex) kèm hình vẽ chuẩn PGF/TikZ từ tác giả.
               </p>
             </div>
 
