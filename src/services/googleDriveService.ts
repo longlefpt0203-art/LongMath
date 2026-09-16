@@ -82,6 +82,77 @@ export async function saveDocumentToDrive(
   folderId: string,
   doc: DocumentItem
 ): Promise<{ id: string; name: string; webViewLink?: string }> {
+  // 1. Nếu có file PDF thực tế (Data URL base64), tải file PDF trực tiếp lên Google Drive
+  if (doc.fileDataUrl && doc.fileDataUrl.startsWith('data:')) {
+    try {
+      const base64Parts = doc.fileDataUrl.split(',');
+      if (base64Parts.length > 1) {
+        const base64Data = base64Parts[1];
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const pdfFileName = doc.fileName?.endsWith('.pdf')
+          ? doc.fileName
+          : `${doc.latexExchangeCode} - ${doc.title}.pdf`;
+
+        const metadata = {
+          name: pdfFileName,
+          parents: [folderId],
+          mimeType: 'application/pdf',
+          description: `Tài liệu: ${doc.title} • Đơn vị: ${doc.institution || 'Biên soạn Toán THPT'} • Mã trao đổi LaTeX: ${doc.latexExchangeCode} • Tác giả: Lê Ngọc Long`,
+        };
+
+        const boundary = '-------toanlongdrivepdfboundary314159';
+        const delimiter = `\r\n--${boundary}\r\n`;
+        const closeDelimiter = `\r\n--${boundary}--`;
+
+        const metadataPart =
+          delimiter +
+          'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+          JSON.stringify(metadata) +
+          delimiter +
+          'Content-Type: application/pdf\r\n\r\n';
+
+        const encoder = new TextEncoder();
+        const headerBytes = encoder.encode(metadataPart);
+        const footerBytes = encoder.encode(closeDelimiter);
+
+        // Ghép Multipart body: Header (Metadata) + Binary (PDF bytes) + Footer (Close delimiter)
+        const combinedBody = new Uint8Array(headerBytes.length + bytes.length + footerBytes.length);
+        combinedBody.set(headerBytes, 0);
+        combinedBody.set(bytes, headerBytes.length);
+        combinedBody.set(footerBytes, headerBytes.length + bytes.length);
+
+        const uploadRes = await fetch(
+          'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': `multipart/related; boundary=${boundary}`,
+            },
+            body: combinedBody,
+          }
+        );
+
+        if (uploadRes.ok) {
+          const resJson = await uploadRes.json();
+          return {
+            id: resJson.id,
+            name: resJson.name,
+            webViewLink: resJson.webViewLink || `https://drive.google.com/file/d/${resJson.id}/view`,
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Không thể upload binary PDF trực tiếp, chuyển sang lưu trữ cấu trúc LaTeX:', err);
+    }
+  }
+
+  // 2. Upload dạng tệp chi tiết kèm Mã trao đổi LaTeX và Mục lục
   const fileName = `${doc.latexExchangeCode} - ${doc.title}.txt`;
 
   // Nội dung chi tiết của tài liệu kèm mẫu mã nguồn LaTeX
@@ -89,7 +160,10 @@ export async function saveDocumentToDrive(
 TÀI LIỆU TOÁN THPT - BẢN QUYỀN LÊ NGỌC LONG
 Mã trao đổi LaTeX: ${doc.latexExchangeCode}
 Tiêu đề: ${doc.title}
-Phân loại: ${doc.category}
+Phân loại: ${doc.category === 'de-thi-hsg' ? 'Đề thi Học Sinh Giỏi' : doc.category === 'de-thi-tn-thpt' ? 'Đề thi Thử Tốt Nghiệp THPT' : 'Tài Liệu Chuyên Đề'}
+Đơn vị ra đề: ${doc.institution || 'Biên soạn Toán THPT'}
+Kỳ thi: ${doc.examName || 'Đề khảo sát / thi thử'}
+Quy mô đề: ${doc.questionCount || 'Đang cập nhật'}
 Khối lớp: ${doc.grade} • Năm học: ${doc.year || '2024 - 2025'}
 Chuyên đề: ${doc.topic} • Độ khó: ${doc.difficulty}
 Số trang: ${doc.pages} trang • Định dạng: PDF + LaTeX
@@ -122,7 +196,6 @@ ${doc.sampleQuestions ? doc.sampleQuestions.join('\n') : '% Mã nguồn LaTeX ch
   if (searchRes.ok) {
     const data = await searchRes.json();
     if (data.files && data.files.length > 0) {
-      // Đã có file trong thư mục
       return data.files[0];
     }
   }

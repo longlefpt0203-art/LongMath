@@ -63,24 +63,30 @@ export default function App() {
     });
   };
 
-  // Master document list (Initialized empty after removing 4 fake docs & 4 fake exams)
+  // Master document list (Initialized completely empty after purging all old data)
   const [documents, setDocuments] = useState<DocumentItem[]>(() => {
     try {
-      const saved = localStorage.getItem('toan_portal_user_docs_v2');
+      // Purge all legacy and cached test data as requested: "xoá hết data cũ đi"
+      localStorage.removeItem('toan_portal_user_docs');
+      localStorage.removeItem('toan_portal_user_docs_v2');
+      localStorage.removeItem('toan_portal_documents_v2');
+      localStorage.removeItem('toan_portal_user_docs_v3');
+      localStorage.removeItem('toan_portal_user_docs_v4');
+
+      const saved = localStorage.getItem('toan_portal_user_docs_v5');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.filter((d: DocumentItem) => !d.id.startsWith('doc-0'));
+        return JSON.parse(saved);
       }
     } catch {
       // ignore
     }
-    return INITIAL_DOCUMENTS;
+    return [];
   });
 
-  // Persist real documents added by user to localStorage
+  // Persist real documents added by user to clean localStorage key
   useEffect(() => {
     try {
-      localStorage.setItem('toan_portal_user_docs_v2', JSON.stringify(documents));
+      localStorage.setItem('toan_portal_user_docs_v5', JSON.stringify(documents));
     } catch (e) {
       console.error(e);
     }
@@ -187,8 +193,10 @@ export default function App() {
           const matchSummary = item.summary.toLowerCase().includes(q);
           const matchCode = item.latexExchangeCode.toLowerCase().includes(q);
           const matchTopic = item.topic.toLowerCase().includes(q);
+          const matchInstitution = item.institution?.toLowerCase().includes(q) || false;
+          const matchExamName = item.examName?.toLowerCase().includes(q) || false;
           const matchTags = item.tags.some((t) => t.toLowerCase().includes(q));
-          if (!matchTitle && !matchSummary && !matchCode && !matchTopic && !matchTags) {
+          if (!matchTitle && !matchSummary && !matchCode && !matchTopic && !matchInstitution && !matchExamName && !matchTags) {
             return false;
           }
         }
@@ -265,15 +273,19 @@ export default function App() {
   };
 
   const handleClearAllDocuments = () => {
-    if (window.confirm('Thầy Long có chắc chắn muốn xóa toàn bộ file tạm và file lỗi để dọn sạch kho tài liệu?')) {
+    if (window.confirm('Thầy Long có chắc chắn muốn xóa toàn bộ dữ liệu tài liệu trên website để làm mới không?')) {
       setDocuments([]);
       try {
+        localStorage.removeItem('toan_portal_user_docs');
         localStorage.removeItem('toan_portal_user_docs_v2');
         localStorage.removeItem('toan_portal_documents_v2');
+        localStorage.removeItem('toan_portal_user_docs_v3');
+        localStorage.removeItem('toan_portal_user_docs_v4');
+        localStorage.removeItem('toan_portal_user_docs_v5');
       } catch (err) {
         console.error(err);
       }
-      setDownloadNotification('Đã dọn dẹp sạch toàn bộ file tạm và file lỗi.');
+      setDownloadNotification('Đã xóa sạch toàn bộ dữ liệu tài liệu cũ trên hệ thống.');
       setTimeout(() => {
         setDownloadNotification(null);
       }, 3500);
@@ -455,19 +467,34 @@ export default function App() {
 
         {/* Documents Cards Grid (Responsive: 1 col mobile, 2 col tablet, 3 col desktop) */}
         {filteredDocuments.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredDocuments.map((doc) => (
-              <DocumentCard
-                key={doc.id}
-                document={doc}
-                onOpenQR={setQrDoc}
-                onOpenDetail={setDetailDoc}
-                onDownload={handleDownload}
-                onPreview={setPreviewDoc}
-                onDelete={handleDeleteDocument}
-                userRole={userRole}
-              />
-            ))}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 font-semibold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/80">
+                  <Eye className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Trang tổng quan: Hiển thị trực tiếp Trang 1 của mỗi tài liệu</span>
+                </span>
+                <span className="hidden sm:inline text-slate-400">• Bấm vào thẻ để xem toàn bộ các trang</span>
+              </div>
+              <span className="text-slate-500 font-medium">
+                Tìm thấy <strong>{filteredDocuments.length}</strong> tài liệu
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredDocuments.map((doc) => (
+                <DocumentCard
+                  key={doc.id}
+                  document={doc}
+                  onOpenQR={setQrDoc}
+                  onOpenDetail={setDetailDoc}
+                  onDownload={handleDownload}
+                  onPreview={setPreviewDoc}
+                  onDelete={handleDeleteDocument}
+                  userRole={userRole}
+                />
+              ))}
+            </div>
           </div>
         ) : documents.length === 0 ? (
           /* Empty Library State when all mock documents are removed */
@@ -677,6 +704,9 @@ export default function App() {
         isOpen={isAdminUploadOpen}
         onClose={() => setIsAdminUploadOpen(false)}
         onDocumentCreated={handleDocumentCreated}
+        savedFolderInfo={savedFolderInfo}
+        accessToken={accessToken}
+        onOpenDriveModal={() => setIsDriveModalOpen(true)}
       />
       <DesignSpecModal
         isOpen={isDesignSpecOpen}

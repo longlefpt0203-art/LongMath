@@ -19,6 +19,8 @@ import {
   MessageCircle,
   Eye,
   Trash2,
+  Building2,
+  HelpCircle,
 } from 'lucide-react';
 import { DocumentItem, UserRole } from '../types';
 
@@ -134,6 +136,30 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
             <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 leading-snug">
               {document.title}
             </h1>
+
+            {/* Institution, Exam Name, and Question Count Info Banner */}
+            {(document.institution || document.examName || document.questionCount) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                {document.institution && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 font-semibold">
+                    <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>Đơn vị ra đề: <strong>{document.institution}</strong></span>
+                  </div>
+                )}
+                {document.examName && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-200 text-purple-900 font-semibold">
+                    <Award className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Kỳ thi: <strong>{document.examName}</strong></span>
+                  </div>
+                )}
+                {document.questionCount && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold">
+                    <HelpCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Quy mô đề: <strong>{document.questionCount}</strong></span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 2-4 Sentence Summary (Core Requirement) */}
