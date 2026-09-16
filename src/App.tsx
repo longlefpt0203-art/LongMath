@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { DocumentCard } from './components/DocumentCard';
@@ -8,6 +8,10 @@ import { AdminUploadModal } from './components/AdminUploadModal';
 import { DesignSpecModal } from './components/DesignSpecModal';
 import { AuthorModal } from './components/AuthorModal';
 import { PersonalLogo } from './components/PersonalLogo';
+import { GoogleDriveSyncModal } from './components/GoogleDriveSyncModal';
+import { initAuth, logout } from './services/firebaseAuth';
+import { DriveFolderInfo } from './services/googleDriveService';
+import { User } from 'firebase/auth';
 import { DocumentItem, MainNavTab } from './types';
 import { INITIAL_DOCUMENTS } from './data/initialDocuments';
 import {
@@ -25,11 +29,35 @@ import {
   ShieldCheck,
   UserCheck,
   MessageSquare,
+  Cloud,
+  Plus,
+  UploadCloud,
+  FolderOpen,
 } from 'lucide-react';
 
 export default function App() {
-  // Master document list
-  const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
+  // Master document list (Initialized empty after removing 4 fake docs & 4 fake exams)
+  const [documents, setDocuments] = useState<DocumentItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('toan_portal_user_docs_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.filter((d: DocumentItem) => !d.id.startsWith('doc-0'));
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_DOCUMENTS;
+  });
+
+  // Persist real documents added by user to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('toan_portal_user_docs_v2', JSON.stringify(documents));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [documents]);
 
   // Navigation & Filtering State
   const [activeNavTab, setActiveNavTab] = useState<MainNavTab>('tai-lieu');
@@ -45,6 +73,49 @@ export default function App() {
   const [isAdminUploadOpen, setIsAdminUploadOpen] = useState<boolean>(false);
   const [isDesignSpecOpen, setIsDesignSpecOpen] = useState<boolean>(false);
   const [isAuthorModalOpen, setIsAuthorModalOpen] = useState<boolean>(false);
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState<boolean>(false);
+
+  // Google Drive & Auth State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [savedFolderInfo, setSavedFolderInfo] = useState<DriveFolderInfo | null>(() => {
+    try {
+      const saved = localStorage.getItem('drive_auto_folder');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Tự động lắng nghe trạng thái đăng nhập Firebase Auth
+  React.useEffect(() => {
+    const unsubscribe = initAuth(
+      (user, token) => {
+        setCurrentUser(user);
+        setAccessToken(token);
+      },
+      () => {
+        setCurrentUser(null);
+        setAccessToken(null);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const handleFolderUpdated = (folder: DriveFolderInfo) => {
+    setSavedFolderInfo(folder);
+    try {
+      localStorage.setItem('drive_auto_folder', JSON.stringify(folder));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setCurrentUser(null);
+    setAccessToken(null);
+  };
 
   // Toast feedback state
   const [downloadNotification, setDownloadNotification] = useState<string | null>(null);
@@ -162,6 +233,8 @@ export default function App() {
         onOpenAdminUpload={() => setIsAdminUploadOpen(true)}
         onOpenDesignSpec={() => setIsDesignSpecOpen(true)}
         onOpenAuthorQR={() => setIsAuthorModalOpen(true)}
+        onOpenDriveModal={() => setIsDriveModalOpen(true)}
+        driveFolderReady={!!savedFolderInfo}
         documentCount={docCount}
         examCount={examCount}
       />
@@ -225,6 +298,68 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* Google Drive Automatic Folder Banner */}
+        <div className="mb-6 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border ${
+                savedFolderInfo
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-blue-50 border-blue-200 text-blue-700'
+              }`}
+            >
+              <Cloud className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-extrabold text-slate-900">
+                  {savedFolderInfo
+                    ? 'Thư Mục Google Drive Đang Lưu Trữ Tự Động'
+                    : 'Tự Động Tạo Thư Mục Trên Google Drive'}
+                </span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                    savedFolderInfo
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}
+                >
+                  {savedFolderInfo ? 'Đang hoạt động' : 'Tự động lưu'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                {savedFolderInfo ? (
+                  <>
+                    Thư mục: <strong className="text-blue-800 font-semibold">{savedFolderInfo.name}</strong> • Hệ thống tự động ghi nhớ và đồng bộ tài liệu Toán THPT của Thầy.
+                  </>
+                ) : (
+                  'Tự động tạo 1 thư mục riêng trên Google Drive của Thầy để lưu trữ và quản lý tài liệu, tự động nhớ trên thiết bị.'
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            {savedFolderInfo?.webViewLink && (
+              <a
+                href={savedFolderInfo.webViewLink}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5"
+              >
+                <span>Mở Trên Drive</span>
+              </a>
+            )}
+            <button
+              onClick={() => setIsDriveModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              <span>{savedFolderInfo ? 'Quản Lý Thư Mục' : 'Tạo Thư Mục Tự Động'}</span>
+            </button>
+          </div>
+        </div>
+
         {/* Dynamic Filter Bar */}
         <FilterBar
           activeNavTab={activeNavTab}
@@ -253,6 +388,27 @@ export default function App() {
                 onDownload={handleDownload}
               />
             ))}
+          </div>
+        ) : documents.length === 0 ? (
+          /* Empty Library State when all mock documents are removed */
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-12 text-center max-w-lg mx-auto my-10 shadow-xs">
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+              <FolderOpen className="w-8 h-8" />
+            </div>
+            <h3 className="font-extrabold text-slate-900 text-lg mb-1.5">
+              Thư viện hiện chưa có tài liệu
+            </h3>
+            <p className="text-xs text-slate-600 mb-6 leading-relaxed max-w-sm mx-auto">
+              Đã xóa toàn bộ 4 tài liệu và 4 đề thi mẫu thành công. Thầy Long có thể bấm nút bên dưới để tải lên tài liệu và đề thi Toán chính thức mới.
+            </p>
+            <button
+              id="empty-state-upload-btn"
+              onClick={() => setIsAdminUploadOpen(true)}
+              className="px-6 py-3 rounded-2xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20 flex items-center gap-2 mx-auto cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tải Lên Tài Liệu / Đề Thi Mới</span>
+            </button>
           </div>
         ) : (
           /* Empty Search Results State */
@@ -411,6 +567,20 @@ export default function App() {
       <AuthorModal
         isOpen={isAuthorModalOpen}
         onClose={() => setIsAuthorModalOpen(false)}
+      />
+      <GoogleDriveSyncModal
+        isOpen={isDriveModalOpen}
+        onClose={() => setIsDriveModalOpen(false)}
+        currentUser={currentUser}
+        accessToken={accessToken}
+        onAuthSuccess={(user, token) => {
+          setCurrentUser(user);
+          setAccessToken(token);
+        }}
+        onLogout={handleLogout}
+        documents={documents}
+        savedFolderInfo={savedFolderInfo}
+        onFolderUpdated={handleFolderUpdated}
       />
     </div>
   );

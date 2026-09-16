@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Layers,
   Search,
+  Cloud,
 } from 'lucide-react';
 import { MainNavTab } from '../types';
 import { PersonalLogo } from './PersonalLogo';
@@ -19,6 +20,8 @@ interface HeaderProps {
   onOpenAdminUpload: () => void;
   onOpenDesignSpec: () => void;
   onOpenAuthorQR: () => void;
+  onOpenDriveModal: () => void;
+  driveFolderReady?: boolean;
   documentCount: number;
   examCount: number;
 }
@@ -29,6 +32,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdminUpload,
   onOpenDesignSpec,
   onOpenAuthorQR,
+  onOpenDriveModal,
+  driveFolderReady = false,
   documentCount,
   examCount,
 }) => {
@@ -132,6 +137,30 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Layers className="w-3.5 h-3.5 text-blue-600" />
               <span>Bản Thiết Kế UI/UX</span>
+            </button>
+
+            {/* Google Drive Auto Sync Button */}
+            <button
+              id="open-drive-modal-btn"
+              onClick={onOpenDriveModal}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs border ${
+                driveFolderReady
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+              title="Tự động tạo thư mục và đồng bộ tài liệu lên Google Drive"
+            >
+              <Cloud className={`w-3.5 h-3.5 ${driveFolderReady ? 'text-emerald-600' : 'text-blue-600'}`} />
+              <span className="hidden sm:inline">Google Drive</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  driveFolderReady
+                    ? 'bg-emerald-200 text-emerald-900'
+                    : 'bg-blue-100 text-blue-800'
+                }`}
+              >
+                {driveFolderReady ? 'Đã kết nối' : 'Tự động'}
+              </span>
             </button>
 
             {/* Admin Upload Button (Mandated Backend Requirement) */}
