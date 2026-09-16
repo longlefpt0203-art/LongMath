@@ -2,6 +2,8 @@ export type CategoryType = 'tai-lieu' | 'de-thi-hsg' | 'de-thi-tn-thpt';
 
 export type MainNavTab = 'tai-lieu' | 'de-thi';
 
+export type UserRole = 'guest' | 'admin';
+
 export interface DocumentItem {
   id: string;
   title: string;
@@ -22,6 +24,10 @@ export interface DocumentItem {
   year?: number;
   tableOfContents?: string[];
   sampleQuestions?: string[];
+  // File data for genuine preview & direct download
+  fileDataUrl?: string;
+  fileName?: string;
+  previewPages?: string[];
 }
 
 export interface AdminUploadResult {
@@ -34,4 +40,7 @@ export interface AdminUploadResult {
   estimatedPages: number;
   tags: string[];
   latexExchangeCode: string;
+  tableOfContents?: string[];
+  sampleQuestions?: string[];
+  previewPages?: string[];
 }

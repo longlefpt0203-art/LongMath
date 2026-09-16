@@ -94,7 +94,7 @@ Khối lớp: ${doc.grade} • Năm học: ${doc.year || '2024 - 2025'}
 Chuyên đề: ${doc.topic} • Độ khó: ${doc.difficulty}
 Số trang: ${doc.pages} trang • Định dạng: PDF + LaTeX
 Tác giả & Bản quyền: Lê Ngọc Long
-Liên hệ Zalo nhận source LaTeX: https://zalo.me/longlefpt0203
+Liên hệ Zalo nhận source LaTeX: https://zaloapp.com/qr/p/1jw57gmjskxkn
 ===============================================================
 
 [TÓM TẮT & MÔ TẢ]:

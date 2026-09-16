@@ -12,8 +12,10 @@ import { GoogleDriveSyncModal } from './components/GoogleDriveSyncModal';
 import { initAuth, logout } from './services/firebaseAuth';
 import { DriveFolderInfo } from './services/googleDriveService';
 import { User } from 'firebase/auth';
-import { DocumentItem, MainNavTab } from './types';
+import { DocumentItem, MainNavTab, UserRole } from './types';
 import { INITIAL_DOCUMENTS } from './data/initialDocuments';
+import { downloadDocumentFile } from './utils/pdfGenerator';
+import { DocumentPreviewModal } from './components/DocumentPreviewModal';
 import {
   BookOpen,
   Award,
@@ -33,9 +35,34 @@ import {
   Plus,
   UploadCloud,
   FolderOpen,
+  User as UserIcon,
+  Eye,
+  Trash2,
 } from 'lucide-react';
 
 export default function App() {
+  // Role State: guest vs admin (Clear distinction requested by user)
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    try {
+      const saved = localStorage.getItem('toan_portal_user_role');
+      return (saved as UserRole) || 'admin';
+    } catch {
+      return 'admin';
+    }
+  });
+
+  const toggleUserRole = () => {
+    setUserRole((prev) => {
+      const next: UserRole = prev === 'admin' ? 'guest' : 'admin';
+      try {
+        localStorage.setItem('toan_portal_user_role', next);
+      } catch (e) {
+        console.error(e);
+      }
+      return next;
+    });
+  };
+
   // Master document list (Initialized empty after removing 4 fake docs & 4 fake exams)
   const [documents, setDocuments] = useState<DocumentItem[]>(() => {
     try {
@@ -70,6 +97,7 @@ export default function App() {
   // Modal States
   const [qrDoc, setQrDoc] = useState<DocumentItem | null>(null);
   const [detailDoc, setDetailDoc] = useState<DocumentItem | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
   const [isAdminUploadOpen, setIsAdminUploadOpen] = useState<boolean>(false);
   const [isDesignSpecOpen, setIsDesignSpecOpen] = useState<boolean>(false);
   const [isAuthorModalOpen, setIsAuthorModalOpen] = useState<boolean>(false);
@@ -189,22 +217,17 @@ export default function App() {
     );
 
     // Provide friendly download toast notification
-    setDownloadNotification(`Đang khởi tạo tải xuống: "${doc.title.slice(0, 50)}..."`);
+    setDownloadNotification(`Đang tải xuống file PDF: "${doc.title.slice(0, 50)}..."`);
     setTimeout(() => {
       setDownloadNotification(null);
-    }, 4500);
+    }, 4000);
 
-    // Create a mock download trigger with a generated PDF Blob
-    const dummyBlob = new Blob(
-      [
-        `%PDF-1.4\n%TOAN THPT PORTAL - TÀI LIỆU CHUẨN\nTiêu đề: ${doc.title}\nMã LaTeX: ${doc.latexExchangeCode}\nTóm tắt: ${doc.summary}\nSố trang: ${doc.pages}\nLiên hệ admin nhận file nguồn .tex: https://zalo.me/0987654321`,
-      ],
-      { type: 'application/pdf' }
-    );
-    const link = window.document.createElement('a');
-    link.href = URL.createObjectURL(dummyBlob);
-    link.download = `${doc.latexExchangeCode}_${doc.title.slice(0, 30).replace(/\s+/g, '_')}.pdf`;
-    link.click();
+    // Trigger real download with proper PDF Blob and filename
+    try {
+      downloadDocumentFile(doc);
+    } catch (e) {
+      console.error('Error downloading document file:', e);
+    }
   };
 
   const handleDocumentCreated = (newDoc: DocumentItem) => {
@@ -224,6 +247,39 @@ export default function App() {
     }, 5000);
   };
 
+  const handleDeleteDocument = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDocuments((prev) => {
+      const updated = prev.filter((d) => d.id !== id);
+      try {
+        localStorage.setItem('toan_portal_user_docs_v2', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+      return updated;
+    });
+    setDownloadNotification('Đã xóa tài liệu khỏi hệ thống.');
+    setTimeout(() => {
+      setDownloadNotification(null);
+    }, 3000);
+  };
+
+  const handleClearAllDocuments = () => {
+    if (window.confirm('Thầy Long có chắc chắn muốn xóa toàn bộ file tạm và file lỗi để dọn sạch kho tài liệu?')) {
+      setDocuments([]);
+      try {
+        localStorage.removeItem('toan_portal_user_docs_v2');
+        localStorage.removeItem('toan_portal_documents_v2');
+      } catch (err) {
+        console.error(err);
+      }
+      setDownloadNotification('Đã dọn dẹp sạch toàn bộ file tạm và file lỗi.');
+      setTimeout(() => {
+        setDownloadNotification(null);
+      }, 3500);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white">
       {/* Top Main Navigation Header */}
@@ -237,6 +293,8 @@ export default function App() {
         driveFolderReady={!!savedFolderInfo}
         documentCount={docCount}
         examCount={examCount}
+        userRole={userRole}
+        onToggleUserRole={toggleUserRole}
       />
 
       {/* Floating Download Toast */}
@@ -376,6 +434,25 @@ export default function App() {
           totalResults={filteredDocuments.length}
         />
 
+        {/* Admin Clean Bar */}
+        {userRole === 'admin' && documents.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 bg-amber-50/80 border border-amber-200 rounded-2xl px-4 py-2.5 text-xs text-amber-950">
+            <span className="font-bold flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-amber-600" />
+              Chế độ Quản trị: Đang có {documents.length} tài liệu trong hệ thống
+            </span>
+            <button
+              id="admin-clear-all-btn"
+              onClick={handleClearAllDocuments}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Xóa sạch các file tạm hoặc file thử nghiệm lỗi"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Dọn dẹp sạch file tạm / lỗi</span>
+            </button>
+          </div>
+        )}
+
         {/* Documents Cards Grid (Responsive: 1 col mobile, 2 col tablet, 3 col desktop) */}
         {filteredDocuments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -386,6 +463,9 @@ export default function App() {
                 onOpenQR={setQrDoc}
                 onOpenDetail={setDetailDoc}
                 onDownload={handleDownload}
+                onPreview={setPreviewDoc}
+                onDelete={handleDeleteDocument}
+                userRole={userRole}
               />
             ))}
           </div>
@@ -401,14 +481,25 @@ export default function App() {
             <p className="text-xs text-slate-600 mb-6 leading-relaxed max-w-sm mx-auto">
               Đã xóa toàn bộ 4 tài liệu và 4 đề thi mẫu thành công. Thầy Long có thể bấm nút bên dưới để tải lên tài liệu và đề thi Toán chính thức mới.
             </p>
-            <button
-              id="empty-state-upload-btn"
-              onClick={() => setIsAdminUploadOpen(true)}
-              className="px-6 py-3 rounded-2xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20 flex items-center gap-2 mx-auto cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tải Lên Tài Liệu / Đề Thi Mới</span>
-            </button>
+            {userRole === 'admin' ? (
+              <button
+                id="empty-state-upload-btn"
+                onClick={() => setIsAdminUploadOpen(true)}
+                className="px-6 py-3 rounded-2xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20 flex items-center gap-2 mx-auto cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tải Lên Tài Liệu / Đề Thi Mới</span>
+              </button>
+            ) : (
+              <button
+                id="empty-state-switch-admin-btn"
+                onClick={toggleUserRole}
+                className="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-all shadow-md flex items-center gap-2 mx-auto cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Chuyển Sang Vai Trò Admin Để Tải Lên</span>
+              </button>
+            )}
           </div>
         ) : (
           /* Empty Search Results State */
@@ -502,7 +593,7 @@ export default function App() {
             </div>
 
             {/* Right Side: Phía bên phải là mã QR thôi */}
-            <div className="shrink-0 flex items-center justify-center">
+            <div className="shrink-0 flex flex-col items-center justify-center gap-1.5">
               <div
                 onClick={() => setIsAuthorModalOpen(true)}
                 className="cursor-pointer group p-2 bg-white rounded-2xl border-2 border-blue-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all"
@@ -514,6 +605,14 @@ export default function App() {
                   className="w-28 h-28 md:w-32 md:h-32 rounded-lg object-contain group-hover:scale-102 transition-transform"
                 />
               </div>
+              <a
+                href="https://zaloapp.com/qr/p/1jw57gmjskxkn"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] font-semibold text-blue-700 hover:underline flex items-center gap-1"
+              >
+                <span>Mở Zalo Tác Giả</span>
+              </a>
             </div>
           </div>
 
@@ -523,11 +622,20 @@ export default function App() {
               © 2025 - 2026 <strong>Lê Ngọc Long</strong>. Mọi quyền được bảo lưu. Tự động phân loại tài liệu với Gemini AI.
             </div>
             <div className="flex items-center space-x-4">
+              <a
+                href="https://zaloapp.com/qr/p/1jw57gmjskxkn"
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-700 hover:underline font-bold"
+              >
+                Zalo Tác Giả
+              </a>
+              <span>•</span>
               <button
                 onClick={() => setIsAuthorModalOpen(true)}
                 className="text-blue-700 hover:underline font-bold"
               >
-                Mã QR Tác Giả (Zalo)
+                Mã QR Tác Giả
               </button>
               <span>•</span>
               <button
@@ -554,6 +662,16 @@ export default function App() {
         document={detailDoc}
         onClose={() => setDetailDoc(null)}
         onDownload={handleDownload}
+        onPreview={setPreviewDoc}
+        onDelete={handleDeleteDocument}
+        userRole={userRole}
+      />
+      <DocumentPreviewModal
+        document={previewDoc}
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        onDownload={handleDownload}
+        onOpenQR={setQrDoc}
       />
       <AdminUploadModal
         isOpen={isAdminUploadOpen}

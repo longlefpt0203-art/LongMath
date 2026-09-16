@@ -17,19 +17,27 @@ import {
   ExternalLink,
   Share2,
   MessageCircle,
+  Eye,
+  Trash2,
 } from 'lucide-react';
-import { DocumentItem } from '../types';
+import { DocumentItem, UserRole } from '../types';
 
 interface DocumentDetailModalProps {
   document: DocumentItem | null;
   onClose: () => void;
   onDownload: (doc: DocumentItem) => void;
+  onPreview: (doc: DocumentItem) => void;
+  onDelete?: (id: string) => void;
+  userRole?: UserRole;
 }
 
 export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
   document,
   onClose,
   onDownload,
+  onPreview,
+  onDelete,
+  userRole = 'guest',
 }) => {
   const [qrUrl, setQrUrl] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
@@ -37,7 +45,7 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
   useEffect(() => {
     if (!document) return;
 
-    const contactText = `https://zalo.me/0987654321?text=Kính gửi Thầy/Cô Admin, tôi quan tâm và muốn xin/trao đổi file nguồn LaTeX của tài liệu: [${document.latexExchangeCode}] - ${document.title}`;
+    const contactText = 'https://zaloapp.com/qr/p/1jw57gmjskxkn';
 
     QRCode.toDataURL(contactText, {
       width: 180,
@@ -220,9 +228,20 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                   Định dạng PDF vector rõ nét, in ấn đẹp, hỗ trợ học tập trực tiếp.
                 </p>
                 <button
+                  id="detail-preview-doc-btn"
+                  onClick={() => {
+                    onClose();
+                    onPreview(document);
+                  }}
+                  className="w-full mb-2.5 py-2.5 px-4 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Xem Trước Nội Dung Tài Liệu</span>
+                </button>
+                <button
                   id="detail-download-pdf-btn"
                   onClick={() => onDownload(document)}
-                  className="w-full py-3 px-4 rounded-xl bg-white text-blue-700 font-bold text-sm hover:bg-blue-50 transition-colors shadow-md flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 rounded-xl bg-white text-blue-700 font-bold text-sm hover:bg-blue-50 transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   <span>Tải File PDF ({document.fileSize})</span>
@@ -263,14 +282,30 @@ export const DocumentDetailModal: React.FC<DocumentDetailModalProps> = ({
                 </div>
 
                 <a
-                  href="https://zalo.me/longlefpt0203"
+                  href="https://zaloapp.com/qr/p/1jw57gmjskxkn"
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full py-2 px-3 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors mb-2.5 shadow-sm shadow-blue-700/20"
+                  className="w-full py-2 px-3 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors mb-2.5 shadow-sm shadow-blue-700/20 cursor-pointer"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Chat Zalo Tác Giả</span>
+                  <span>Mở Zalo Tác Giả</span>
                 </a>
+
+                {userRole === 'admin' && onDelete && (
+                  <button
+                    id="admin-delete-doc-btn"
+                    onClick={() => {
+                      if (window.confirm(`Xác nhận xóa tài liệu "${document.title}" khỏi hệ thống?`)) {
+                        onClose();
+                        onDelete(document.id);
+                      }
+                    }}
+                    className="w-full py-2 px-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors mb-2.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Xóa Tài Liệu Này (Admin)</span>
+                  </button>
+                )}
 
                 {/* Mandated Copyright Note */}
                 <p className="text-[11px] font-medium text-slate-500 border-t border-slate-200/80 pt-2">

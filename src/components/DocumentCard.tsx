@@ -1,12 +1,15 @@
 import React from 'react';
-import { Download, QrCode, FileText, Sparkles, BookOpen, Award, ArrowUpRight, CheckCircle2 } from 'lucide-react';
-import { DocumentItem } from '../types';
+import { Download, QrCode, FileText, Sparkles, BookOpen, Award, ArrowUpRight, CheckCircle2, Eye, Trash2 } from 'lucide-react';
+import { DocumentItem, UserRole } from '../types';
 
 interface DocumentCardProps {
   document: DocumentItem;
   onOpenQR: (doc: DocumentItem) => void;
   onOpenDetail: (doc: DocumentItem) => void;
   onDownload: (doc: DocumentItem) => void;
+  onPreview: (doc: DocumentItem) => void;
+  onDelete?: (id: string, e: React.MouseEvent) => void;
+  userRole?: UserRole;
 }
 
 export const DocumentCard: React.FC<DocumentCardProps> = ({
@@ -14,6 +17,9 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   onOpenQR,
   onOpenDetail,
   onDownload,
+  onPreview,
+  onDelete,
+  userRole = 'guest',
 }) => {
   // Category visual badge styling
   const getCategoryBadge = () => {
@@ -62,9 +68,26 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
               </span>
             )}
           </div>
-          <span className="text-[11px] font-mono text-slate-400">
-            {document.latexExchangeCode}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-mono text-slate-400">
+              {document.latexExchangeCode}
+            </span>
+            {userRole === 'admin' && onDelete && (
+              <button
+                id={`btn-delete-${document.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(`Xóa tài liệu "${document.title}"?`)) {
+                    onDelete(document.id, e);
+                  }
+                }}
+                className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                title="Xóa tài liệu này (Admin)"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Title */}
@@ -112,26 +135,38 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
         </div>
 
         {/* Buttons Grid */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
+          {/* Nút Xem trước */}
+          <button
+            id={`btn-preview-${document.id}`}
+            onClick={() => onPreview(document)}
+            className="py-2.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1 border border-slate-200 transition-colors cursor-pointer"
+            title="Xem trước nội dung tài liệu trước khi tải"
+          >
+            <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="truncate">Xem trước</span>
+          </button>
+
           {/* Nút Tải tài liệu */}
           <button
             id={`btn-download-${document.id}`}
             onClick={() => onDownload(document)}
-            className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center space-x-1.5 shadow-sm transition-all hover:shadow-md hover:shadow-blue-600/20"
+            className="py-2.5 px-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center gap-1 shadow-sm transition-all hover:shadow-md hover:shadow-blue-600/20 cursor-pointer"
+            title="Tải ngay file PDF"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Tải tài liệu</span>
+            <Download className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Tải về</span>
           </button>
 
           {/* Mã QR quét liên hệ Admin (để trao đổi file LaTeX nếu cần) */}
           <button
             id={`btn-qr-${document.id}`}
             onClick={() => onOpenQR(document)}
-            className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 active:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
-            title="Quét mã QR liên hệ trao đổi file nguồn LaTeX"
+            className="py-2.5 px-2 rounded-xl bg-white hover:bg-slate-100 active:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors shadow-xs cursor-pointer"
+            title="Quét mã QR trao đổi file nguồn LaTeX"
           >
-            <QrCode className="w-3.5 h-3.5 text-blue-600" />
-            <span>Mã QR LaTeX</span>
+            <QrCode className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="truncate">Mã LaTeX</span>
           </button>
         </div>
       </div>

@@ -111,6 +111,14 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ document, onClose }) =
             <div className="mt-2 text-[11px] font-medium text-slate-600">
               Quét bằng Camera điện thoại hoặc ứng dụng Zalo
             </div>
+            <a
+              href="https://zaloapp.com/qr/p/1jw57gmjskxkn"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-block text-[11px] text-blue-600 font-semibold hover:underline"
+            >
+              https://zaloapp.com/qr/p/1jw57gmjskxkn
+            </a>
           </div>
 
           {/* Value proposition note */}
@@ -126,17 +134,17 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ document, onClose }) =
             <button
               id="download-qr-btn"
               onClick={handleDownloadQr}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Tải ảnh QR Zalo</span>
             </button>
             <a
               id="open-zalo-btn"
-              href="https://zalo.me/longlefpt0203"
+              href="https://zaloapp.com/qr/p/1jw57gmjskxkn"
               target="_blank"
               rel="noreferrer"
-              className="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors shadow-sm shadow-blue-700/20"
+              className="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors shadow-sm shadow-blue-700/20 cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Mở Zalo Tác Giả</span>

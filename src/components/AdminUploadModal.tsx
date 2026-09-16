@@ -64,6 +64,7 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
   const [analysisStep, setAnalysisStep] = useState<string>('');
   const [analyzedResult, setAnalyzedResult] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [fileDataUrl, setFileDataUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +77,7 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
     setAnalysisStep('');
     setAnalyzedResult(null);
     setErrorMsg(null);
+    setFileDataUrl(null);
   };
 
   const handleClose = () => {
@@ -111,13 +113,17 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
         const buffer = await rawFile.arrayBuffer();
         const bytes = new Uint8Array(buffer);
         let binary = '';
-        for (let i = 0; i < Math.min(bytes.byteLength, 100000); i++) {
+        for (let i = 0; i < bytes.byteLength; i++) {
           binary += String.fromCharCode(bytes[i]);
         }
         base64Data = btoa(binary);
+        const dataUrl = `data:${rawFile.type || 'application/pdf'};base64,${base64Data}`;
+        setFileDataUrl(dataUrl);
       } catch (err) {
         console.warn('Could not read binary base64, using filename & mock fallback', err);
       }
+    } else {
+      setFileDataUrl(null);
     }
 
     try {
@@ -130,7 +136,7 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
           fileName,
           textContent,
           fileBase64: base64Data || undefined,
-          mimeType: 'application/pdf',
+          mimeType: rawFile?.type || 'application/pdf',
         }),
       });
 
@@ -139,7 +145,7 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
       }
 
       const data = await response.json();
-      setAnalysisStep('Hoàn tất! Tự động tạo tiêu đề SEO, tóm tắt và mã LaTeX.');
+      setAnalysisStep('Hoàn tất! Đã trích xuất cấu trúc đề, câu hỏi và nội dung xem trước.');
       setAnalyzedResult({
         ...data,
         fileName,
@@ -159,13 +165,27 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
             : fileName.toLowerCase().includes('tn') || fileName.toLowerCase().includes('tot_nghiep')
             ? 'de-thi-tn-thpt'
             : 'tai-lieu',
-          grade: 'Lớp 12',
+          grade: '12',
           topic: 'Toán học THPT',
           difficulty: 'Vận dụng',
           estimatedPages: 24,
           tags: ['Toán THPT', 'Tài liệu số', 'PDF'],
           latexExchangeCode: `LTX-TOAN-${Math.floor(1000 + Math.random() * 9000)}`,
-          fileSize: '3.6 MB',
+          fileSize: rawFile ? `${(rawFile.size / (1024 * 1024)).toFixed(1)} MB` : '3.6 MB',
+          tableOfContents: [
+            'Phần 1: Khung lý thuyết và phương pháp tư duy bản chất',
+            'Phần 2: Hệ thống bài tập trắc nghiệm và câu hỏi vận dụng 8.0+',
+            'Phần 3: Hướng dẫn giải chi tiết & bảng tra cứu đáp số',
+          ],
+          sampleQuestions: [
+            'Câu hỏi 1: Tìm tất cả các giá trị thực của tham số m để hàm số đạt cực tiểu tại x = 1.',
+            'Câu hỏi 2: Tính thể tích khối chóp tứ giác đều có cạnh đáy bằng a và góc giữa mặt bên với mặt đáy bằng 60 độ.',
+          ],
+          previewPages: [
+            'Trang 1 - Trích đoạn Lý thuyết & Khung ma trận kiến thức theo chương trình GDPT 2018.',
+            'Trang 2 - Trích đoạn Bài toán mẫu & Phương pháp giải chi tiết từng bước.',
+            'Trang 3 - Trích đoạn Hệ thống bài tập tự luyện và bảng tra cứu đáp án.',
+          ],
         });
       }, 600);
     } finally {
@@ -181,9 +201,9 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
       title: analyzedResult.title,
       summary: analyzedResult.summary,
       category: analyzedResult.category as CategoryType,
-      grade: (analyzedResult.grade?.includes('10')
+      grade: (analyzedResult.grade?.toString().includes('10')
         ? '10'
-        : analyzedResult.grade?.includes('11')
+        : analyzedResult.grade?.toString().includes('11')
         ? '11'
         : '12') as any,
       topic: analyzedResult.topic || 'Hàm số & Đạo hàm',
@@ -196,13 +216,17 @@ export const AdminUploadModal: React.FC<AdminUploadModalProps> = ({
       latexExchangeCode: analyzedResult.latexExchangeCode || `LTX-TOAN-${Math.floor(1000 + Math.random() * 9000)}`,
       pdfUrl: '#download-uploaded',
       hasLatex: true,
-      author: 'Admin Toán THPT',
+      author: 'Admin Toán THPT (Thầy Long)',
       year: 2025,
-      tableOfContents: [
+      tableOfContents: analyzedResult.tableOfContents || [
         'Phần trích đoạn lý thuyết & phân dạng chuyên đề',
         'Hệ thống bài tập vận dụng & vận dụng cao',
         'Bảng đáp án và hướng dẫn giải tự động hóa',
       ],
+      sampleQuestions: analyzedResult.sampleQuestions || [],
+      previewPages: analyzedResult.previewPages || [],
+      fileDataUrl: fileDataUrl || undefined,
+      fileName: analyzedResult.fileName || file?.name || 'TaiLieuToan.pdf',
     };
 
     onDocumentCreated(newDoc);

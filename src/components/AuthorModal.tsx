@@ -13,7 +13,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText('https://zalo.me/longlefpt0203');
+    navigator.clipboard.writeText('https://zaloapp.com/qr/p/1jw57gmjskxkn');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -118,10 +118,10 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({ isOpen, onClose }) => 
               <span>Lưu mã QR Zalo</span>
             </button>
             <a
-              href="https://zalo.me/longlefpt0203"
+              href="https://zaloapp.com/qr/p/1jw57gmjskxkn"
               target="_blank"
               rel="noreferrer"
-              className="py-2.5 px-4 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-700/20"
+              className="py-2.5 px-4 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-700/20 cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Mở Zalo Tác Giả</span>
