@@ -1,0 +1,6 @@
+{
+  "name": "Toán THPT - Thư Viện Tài Liệu & Đề Thi",
+  "description": "Nền tảng tài liệu và đề thi Toán THPT (HSG & TN THPT) thuộc Bản quyền của Lê Ngọc Long, tích hợp AI phân tích PDF và mã QR Zalo trao đổi file LaTeX.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
